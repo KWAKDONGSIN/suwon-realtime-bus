@@ -1,0 +1,6 @@
+public/
+.wrangler/
+.dev.vars
+node_modules/
+assets/usw-*
+docs_img/

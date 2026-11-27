@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- B안: 버스 회사 운행 시스템(GPS) 연동 모의. 가상 업체 응답을 30초마다 받아 변환기로 공통 형식에 넣는다 -->
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>운행 시스템 연동 (B안)</title><link rel="icon" href="assets/usw-emblem.png"><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="top gray"><div class="brand"><img class="logo" src="assets/usw-logo.png" alt="수원대학교" onerror="this.remove()"><span class="sep"></span><div><h1>운행 시스템 연동 (B안)</h1><p>버스 회사 GPS 위치를 받아 오는 쪽 · 기사님이 할 일 없음</p></div></div></div>
+<div class="dummy">팀 핀포인트 시제품 · 학교 승인 전 · 가상 업체 응답</div>
+<div class="wrap">
+  <div class="card">
+    <button class="btn" id="start">연동 시작 (30초마다 받아 오기)</button><div style="height:10px"></div>
+    <button class="btn gray" id="stop" disabled>연동 멈춤</button>
+    <label class="ctl" style="margin-top:10px"><input type="checkbox" id="fail"> 업체 응답 오류 흉내(위치가 끊기면 학생 화면이 3분 뒤 "위치 확인 안 됨"으로 바뀌는지 보기)</label>
+  </div>
+  <div class="card"><div class="row"><span class="tag none" id="state">멈춤</span><span class="sub" id="info"></span></div>
+    <p class="note">① 업체가 보내 준 원래 응답</p><pre id="raw">-</pre>
+    <p class="note">② 변환기(adapter-b.js)를 거친 공통 형식</p><pre id="norm">-</pre></div>
+  <div class="card"><p class="note">실제 운영에서는 서버가 정해진 주기로 업체 주소를 부르고(또는 업체가 서버로 보내 주고), 차량 번호를 노선·호차에 짝지어 저장합니다. 업체 형식이 정해지면 adapter-b.js 한 파일만 바꾸면 학생 화면은 그대로 씁니다.</p></div>
+</div>
+<script src="paths.js"></script><script src="data.js"></script><script src="eta.js"></script><script src="adapter-b.js"></script><script src="common.js"></script>
+<script>
+var $ = function (id) { return document.getElementById(id); }, timer = null, last = -1e9, n = 0, map = {};
+LocData.ROUTES.forEach(function (r) { map[r.carNo] = r.id; });
+function poll() {
+  var now = Loc.Clock.now(); if (now - last < 30) return; last = now;
+  var resp = $('fail').checked ? { resultCode: '99', message: 'SYSTEM ERROR' } : AdapterB.fake(LocData.ROUTES, now, Eta.simulate, LocData.DELAY_TO_STOP, '20261126');
+  var p = AdapterB.parse(resp, map);
+  $('raw').textContent = JSON.stringify(resp, null, 1);
+  $('norm').textContent = p.ok ? JSON.stringify(p.fixes, null, 1) : '버림: ' + p.error;
+  p.fixes.forEach(function (f) { Loc.Store.push(f); n++; });
+  LocData.ROUTES.forEach(function (r) { if (p.ok && LocData.FULL_DEPART[r.id] && now >= Eta.hm(r.dep) * 60 && !Loc.Events.all()[r.id]) Loc.Events.markFull(r.id, Eta.hm(r.dep) * 60); }); // 더미 만석 출발
+  $('info').textContent = Eta.clock(now) + ' 받음 · 누적 ' + n + '건';
+}
+$('start').onclick = function () { last = -1e9; timer = setInterval(poll, 250); this.disabled = true; $('stop').disabled = false; $('state').className = 'tag ok'; $('state').textContent = '연동 중'; };
+$('stop').onclick = function () { clearInterval(timer); this.disabled = true; $('start').disabled = false; $('state').className = 'tag none'; $('state').textContent = '멈춤'; };
+if (location.hash === '#auto') $('start').click(); // 발표용: 주소 끝 #auto면 바로 연동 시작
+</script></body></html>

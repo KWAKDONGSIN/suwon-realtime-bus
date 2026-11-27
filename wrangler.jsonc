@@ -1,0 +1,10 @@
+{
+  // 수원대 실시간버스 시제품 Worker. 화면은 public/(tools/build_public.mjs로 생성), 위치는 Durable Object 한 곳에 보관
+  "name": "suwon-realtime-bus",
+  "main": "worker/index.mjs",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "durable_objects": { "bindings": [{ "name": "BUS_HUB", "class_name": "BusHub" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BusHub"] }]
+  // 기기 등록 DEVICES(예 {"<긴 무작위 기기ID>":"songnae2"})는 비밀 값이다. 배포 땐 wrangler secret put DEVICES, 로컬은 .dev.vars
+}

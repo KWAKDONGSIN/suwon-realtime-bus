@@ -1,0 +1,38 @@
+/* 위치 서비스 시제품 공통 스타일 */
+:root { --blue: #003670; --gold: #E9B800; --teal: #0b4f8a; --ink: #1b2430; --sub: #5b6573; --bg: #f4f6f9; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; background: var(--bg); color: var(--ink); }
+.top { background: #fff; color: var(--blue); padding: 12px 16px 10px; border-bottom: 4px solid var(--gold); }
+.logo { height: 30px; width: auto; display: block; }
+.top .sep { width: 1px; height: 28px; background: #cbd5e1; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.badge { width: 38px; height: 38px; border-radius: 50%; background: var(--gold); color: var(--blue); font-weight: 900; font-size: 12px; display: flex; align-items: center; justify-content: center; flex: none; }
+#map { height: 260px; border-radius: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.bus-ic { background: var(--blue); color: #fff; border: 2px solid var(--gold); border-radius: 50%; width: 26px !important; height: 26px !important; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.top.teal { box-shadow: inset 6px 0 0 var(--teal); } .top.gray { box-shadow: inset 6px 0 0 #334155; }
+.top h1 { font-size: 19px; margin: 0; } .top p { font-size: 13px; color: var(--sub); margin: 3px 0 0; }
+.dummy { background: #fde68a; color: #7c4a03; font-size: 12px; text-align: center; padding: 6px; font-weight: 700; }
+.wrap { padding: 14px; max-width: 520px; margin: 0 auto; }
+.card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+button.card { display: block; width: 100%; text-align: left; border: 0; font: inherit; color: inherit; cursor: pointer; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.name { font-weight: 700; font-size: 16px; } .sub { font-size: 12.5px; color: var(--sub); margin-top: 3px; }
+.tag { font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 99px; white-space: nowrap; }
+.ok { background: #dcfce7; color: #166534; } .late { background: #fee2e2; color: #991b1b; }
+.wait { background: #e0e7ff; color: #3730a3; } .none { background: #e5e7eb; color: #374151; }
+.big { font-size: 24px; font-weight: 800; margin-top: 8px; } .big small { font-size: 13px; font-weight: 600; color: var(--sub); }
+.note { font-size: 12.5px; color: var(--sub); line-height: 1.6; }
+.btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 20px; font-size: 20px; font-weight: 800; color: #fff; background: var(--blue); cursor: pointer; }
+.btn.red { background: #dc2626; } .btn.gray { background: #64748b; } .btn:disabled { opacity: .45; }
+.small-btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+select, input { font: inherit; padding: 6px; }
+pre { background: #0f172a; color: #e2e8f0; padding: 10px; border-radius: 10px; font-size: 11.5px; overflow: auto; max-height: 220px; }
+.line { position: relative; margin: 14px 4px 4px 14px; border-left: 4px solid #cbd5e1; padding-left: 18px; }
+.stop { position: relative; padding: 0 0 18px; } .stop:last-child { padding-bottom: 0; }
+.stop::before { content: ""; position: absolute; left: -26px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #94a3b8; }
+.stop.done::before { background: var(--blue); border-color: var(--blue); }
+.stop b { font-size: 14px; } .stop span { display: block; font-size: 12.5px; color: var(--sub); margin-top: 2px; }
+.bar { height: 8px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin-top: 10px; }
+.bar i { display: block; height: 100%; background: var(--blue); }
+.ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+a { color: var(--blue); }

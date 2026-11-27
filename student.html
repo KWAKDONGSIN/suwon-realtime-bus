@@ -1,0 +1,142 @@
+<!doctype html>
+<!-- 학생 화면(A안·B안 공통): 노선별 승차장·학교 도착 예상과 지연을 보여 준다 -->
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수원대 실시간버스</title><link rel="icon" href="assets/usw-emblem.png"><link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha384-c6Rcwz4e4CITMbu/NBmnNS8yN2sC3cUElMEMfP3vqqKFp7GOYaaBBCqmaWBjmkjb" crossorigin="anonymous"></head>
+<body>
+<div class="top"><div class="brand"><img class="logo" src="assets/usw-logo.png" alt="수원대학교" onerror="this.remove()"><span class="sep"></span>
+  <div><h1 id="title">실시간버스</h1><p id="clock"></p></div></div></div>
+<div class="dummy">팀 핀포인트 시제품 · 학교 승인 전 · 더미 데이터</div>
+<div class="wrap"><div id="map" role="img" aria-label="통학버스 위치 지도"></div><p class="note" style="margin:-6px 4px 10px;font-size:11px">노선 경로: © OpenStreetMap 기여자(OSRM) · 버스 위치는 시연용 더미</p><div id="main"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO" crossorigin="anonymous"></script>
+<script src="config.js"></script><script src="mapview.js"></script><script src="paths.js"></script><script src="data.js"></script><script src="eta.js"></script><script src="common.js"></script>
+<script>
+var el = Loc.el, sel = null;
+var SRC = { A: '버스에 둔 공기계', B: '버스 운행 시스템' };
+function card(r) {
+  var f = Loc.Store.of(r.id), now = Loc.Clock.now(), e = Eta.estimate(r, f, now), last = f[f.length - 1];
+  var tag, big, small;
+  if (e.state === 'none') { tag = ['none', '운행 전']; big = '위치 정보 없음'; small = '차고지 출발 ' + r.depotLeave + ' 예정'; }
+  else if (e.state === 'stale') { tag = ['none', '위치 확인 안 됨']; big = '예상 시각 없음'; small = Math.round(e.ageSec / 60) + '분 동안 위치가 오지 않음'; }
+  else if (e.state === 'toStop') { var m = Math.max(0, Math.round((e.etaStop - now) / 60));
+    tag = e.delayMin >= 2 ? ['late', e.delayMin + '분 지연'] : ['ok', '정시'];
+    big = m <= 0 ? '곧 도착' : m + '분 뒤 도착'; small = '승차장 예상 ' + Eta.clock(e.etaStop) + ' (예정 ' + r.dep + ')'; }
+  else if (e.state === 'atStop') { tag = ['wait', r.free ? '탑승 중' : '승차장 도착']; big = r.free ? '지금 탈 수 있음' : '출발 대기'; small = r.free ? '약 ' + r.dep + ' 출발(관찰값) · 차면 먼저 출발' : r.dep + ' 출발 예정'; }
+  else if (e.state === 'toSchool') { tag = e.delayMin >= 2 ? ['late', '학교 ' + e.delayMin + '분 지연'] : ['ok', '운행 중'];
+    big = '학교로 가는 중'; small = '학교 도착 예상 ' + Eta.clock(e.etaSchool); }
+  else { tag = ['ok', '도착']; big = '학교 도착'; small = ''; }
+  var full = Loc.Events.all()[r.id];
+  if (full && (e.state === 'toSchool' || e.state === 'arrived')) { tag = ['late', '만석 출발']; small = Eta.clock(full.fullAt) + ' 만석으로 출발 · ' + small; }
+  return { e: e, last: last, view: el('button', { class: 'card', onclick: function () { sel = r.id; render(); } }, [
+    el('div', { class: 'row' }, [el('div', {}, [el('div', { class: 'name', text: r.name }), el('div', { class: 'sub', text: r.stopName })]), el('span', { class: 'tag ' + tag[0], text: tag[1] })]),
+    el('div', { class: 'big' }, [big + ' ', el('small', { text: small })])]) };
+}
+function detail(r) {
+  var c = card(r), e = c.e, ps = Eta.planSpeeds(r), now = Loc.Clock.now(), pct = Math.min(100, (e.progressM || 0) / ps.sEnd * 100);
+  var stopDone = e.state === 'atStop' || e.state === 'toSchool' || e.state === 'arrived';
+  var stops = [
+    el('div', { class: 'stop done' }, [el('b', { text: '차고지 출발' }), el('span', { text: r.depotLeave + ' 예정' })]),
+    el('div', { class: 'stop' + (stopDone ? ' done' : '') }, [el('b', { text: r.stopName }), el('span', { text: '예정 ' + r.dep + (e.etaStop ? ' → 예상 ' + Eta.clock(e.etaStop) : '') })]),
+    el('div', { class: 'stop' + (e.state === 'arrived' ? ' done' : '') }, [el('b', { text: '수원대 정문' }), el('span', { text: e.etaSchool ? '예상 ' + Eta.clock(e.etaSchool) + ' (예정 ' + r.arr + ')' : '예정 ' + r.arr })])
+  ];
+  return [el('button', { class: 'small-btn', onclick: function () { sel = null; render(); }, text: '← 전체 노선' }), el('div', { style: 'height:10px' }), c.view,
+    el('div', { class: 'card' }, [el('div', { class: 'sub', text: '진행 ' + Math.round(pct) + '%' }), el('div', { class: 'bar' }, [el('i', { style: 'width:' + pct + '%' })]),
+      el('div', { class: 'line' }, stops),
+      el('p', { class: 'note', text: c.last ? '마지막 위치 ' + Math.max(0, Math.round(now - c.last.ts)) + '초 전 · 출처 ' + SRC[c.last.source] + ' (' + c.last.source + '안)' + (e.offRouteM > 500 ? ' · 노선에서 ' + e.offRouteM + 'm 벗어남' : '') : '아직 위치가 들어오지 않았습니다.' })]),
+    el('div', { class: 'card' }, [el('p', { class: 'note', text: '3분 넘게 위치가 오지 않으면 예상 시각을 지우고 "위치 확인 안 됨"으로 바꿉니다. 지연 사유는 학교나 기사님이 적은 경우에만 표시합니다.' })])];
+}
+// 병점 아침 3대(08:30·08:40·08:50 차례 출발): 지금 탈 수 있는 차, 만석 출발, 놓쳤을 때 일반 버스
+function bjBuses() { return LocData.ROUTES.filter(function (r) { return r.group === 'byeongjeom'; }); }
+function bjSummary() {
+  var now = Loc.Clock.now(), st = bjBuses().map(function (r) { return { r: r, e: Eta.estimate(r, Loc.Store.of(r.id), now) }; });
+  var at = st.filter(function (x) { return x.e.state === 'atStop'; })[0];
+  var coming = st.filter(function (x) { return x.e.state === 'toStop'; })[0];
+  var gone = st.filter(function (x) { return x.e.state === 'toSchool' || x.e.state === 'arrived'; }).length;
+  if (at) return { tag: ['wait', '탑승 중'], big: at.r.name.slice(-3) + ' 지금 탈 수 있음', small: '약 ' + at.r.dep + ' 출발(관찰값) · 차면 먼저 출발', allGone: false, gone: gone };
+  if (coming) { var m = Math.max(0, Math.round((coming.e.etaStop - now) / 60));
+    return { tag: ['ok', gone + '대 출발'], big: coming.r.name.slice(-3) + ' ' + (m <= 0 ? '곧 도착' : m + '분 뒤 도착'), small: '승차장 예상 ' + Eta.clock(coming.e.etaStop), allGone: false, gone: gone }; }
+  if (gone === st.length) return { tag: ['late', '모두 출발'], big: '08:50 회차 3대 모두 출발', small: LocData.ALT_BUS.next + ' · 아래 일반 버스를 타세요', allGone: true, gone: gone };
+  var b1 = bjBuses()[0]; return { tag: ['none', '운행 전'], big: '08:50 회차 운행 전', small: '1호차 약 ' + b1.dep + ' 출발(관찰값)', allGone: false, gone: gone };
+}
+function altBox(n) {
+  var a = LocData.ALT_BUS;
+  return el('div', { class: 'card', style: 'border:2px solid #E9B800' }, [el('div', { class: 'name', text: '놓쳤을 때 · ' + a.station + ' 일반 버스' }),
+    el('div', { class: 'sub', text: a.next + ' · 수원대학교 정류소를 지나는 노선' })].concat(a.list.slice(0, n).map(function (b) {
+      return el('div', { class: 'row', style: 'margin-top:8px' }, [el('span', {}, [el('b', { text: b.route }), ' ' + b.to + ' 방면']), el('span', { class: 'tag ok', text: b.min + '분 뒤' })]); }))
+    .concat([el('p', { class: 'note', text: '경기도 버스 도착 정보 API 실제 조회값(' + a.fetchedAt + '). 시제품은 이 값을 고정으로 보여 주고, 실제 서비스는 서버가 30초마다 새로 받습니다.' })]));
+}
+function bjCard() {
+  var s = bjSummary();
+  var rows = bjBuses().map(function (r) { var c = card(r); return el('div', { class: 'row', style: 'margin-top:6px' }, [el('span', { class: 'sub', text: r.name.slice(-3) }), el('span', { class: 'sub', text: c.view.querySelector('.tag').textContent + ' · ' + c.view.querySelector('.big').firstChild.textContent.trim() })]); });
+  return [el('button', { class: 'card', onclick: function () { sel = 'byeongjeom'; render(); } }, [
+    el('div', { class: 'row' }, [el('div', {}, [el('div', { class: 'name', text: '병점 08:50 회차 3대 (무료)' }), el('div', { class: 'sub', text: '병점역 후문 · 실제 출발 약 08:30·08:40·08:50(팀 관찰)' })]), el('span', { class: 'tag ' + s.tag[0], text: s.tag[1] })]),
+    el('div', { class: 'big' }, [s.big + ' ', el('small', { text: s.small })])].concat(rows)), s.allGone ? altBox(3) : null];
+}
+function bjDetail() {
+  return [el('button', { class: 'small-btn', onclick: function () { sel = null; render(); }, text: '← 전체 노선' }), el('div', { style: 'height:10px' })]
+    .concat(bjCard().slice(0, 1)).concat(bjBuses().map(function (r) { return card(r).view; })).concat([altBox(6),
+    el('div', { class: 'card' }, [el('p', { class: 'note', text: '병점은 학교 공지상 08:50 회차 3대이고, 팀 관찰로는 약 08:30·08:40·08:50에 차례로 떠납니다. 차면 먼저 출발합니다(학교 답변). 만석 여부는 GPS로 알 수 없어, 현장에서 누가 "만석 출발"을 누를지 학교와 정한 뒤 씁니다. 기사님이나 현장 담당이 버스 공기계의 "만석 출발"을 누르면 여기에 바로 표시됩니다.' })])]);
+}
+// 발표용: 주소 끝 #demo=08:48 처럼 시각을 주면 그 시각까지의 더미 주행을 채우고 시계를 멈춘다
+(function () {
+  var m = /#demo=(\d\d):(\d\d)/.exec(location.hash); if (!m) return;
+  var s2 = /sel=([a-z0-9]+)/.exec(location.hash); if (s2) sel = s2[1]; // 예: #demo=07:45&sel=songnae2
+  var now = (+m[1]) * 3600 + (+m[2]) * 60; Loc.Store.clear(); Loc.Events.clear(); Loc.Clock.reset(now, 0);
+  LocData.ROUTES.forEach(function (r) {
+    for (var t = Eta.hm(r.depotLeave) * 60; t <= now; t += 30) { var p = Eta.simulate(r, t, LocData.DELAY_TO_STOP[r.id]); if (p) { p.busId = r.id; p.source = 'A'; Loc.Store.push(p); } }
+    if (LocData.FULL_DEPART[r.id] && now >= Eta.hm(r.dep) * 60) Loc.Events.markFull(r.id, Eta.hm(r.dep) * 60);
+  });
+})();
+// 실시간: 주소 끝 #live 면 실제 시각으로 서버(/api/v1/buses)의 위치를 5초마다 받아 그린다
+var LIVE = /#live/.test(location.hash);
+(function () {
+  if (!LIVE) return;
+  var s3 = /sel=([a-z0-9]+)/.exec(location.hash); if (s3) sel = s3[1];
+  Loc.Store.clear(); Loc.Events.clear(); Loc.Clock.real();
+  document.querySelector('.dummy').textContent = '팀 핀포인트 시제품 · 학교 승인 전 · 시험 기기의 실제 위치';
+  document.querySelector('.note').textContent = '노선 경로: © OpenStreetMap 기여자(OSRM) · 버스 위치는 시험 기기가 보낸 실제 위치';
+  function kst(t) { return ((t + 9 * 3600) % 86400 + 86400) % 86400; }
+  function pull() {
+    fetch('/api/v1/buses', { cache: 'no-store' }).then(function (res) { return res.json(); }).then(function (d) {
+      Object.keys(d.buses).forEach(function (id) { d.buses[id].forEach(function (f) {
+        Loc.Store.push({ busId: id, lat: f.lat, lng: f.lng, ts: kst(f.t), source: 'A', batt: f.batt == null ? null : f.batt }); }); });
+    }).catch(function () {});
+  }
+  pull(); setInterval(pull, 5000);
+})();
+// 지도: config.js에 카카오 키가 있으면 카카오 지도, 없으면 오픈스트리트맵(mapview.js)
+var mv = null, layers = {}, shownSel = 'init';
+MapView.create(document.getElementById('map'), function (v, err) {
+  if (!v) { document.getElementById('map').textContent = err; return; }
+  mv = v; mv.school(LocData.SCHOOL);
+  LocData.ROUTES.forEach(function (r) { layers[r.id] = { line: mv.line(r.path), bus: null }; mv.stop(r.path[r.stopIndex], r.stopName); });
+  render();
+});
+function drawMap() {
+  if (!mv) return;
+  LocData.ROUTES.forEach(function (r) {
+    var L1 = layers[r.id], f = Loc.Store.of(r.id), last = f[f.length - 1];
+    var fresh = last && Loc.Clock.now() - last.ts <= Eta.STALE_SEC, hide = sel && sel !== r.id && sel !== r.group;
+    L1.line.fade(hide);
+    if (fresh && !hide) { if (L1.bus) L1.bus.move([last.lat, last.lng]); else L1.bus = mv.bus([last.lat, last.lng], r.name); }
+    else if (L1.bus) { L1.bus.remove(); L1.bus = null; } // 끊기면 지도에서도 지움
+  });
+  if (shownSel !== sel) { // 고른 노선이 바뀔 때만 화면 맞춤
+    shownSel = sel;
+    var r = sel && LocData.ROUTES.find(function (x) { return x.id === sel || x.group === sel; });
+    mv.fit(r ? r.path : [].concat.apply([], LocData.ROUTES.map(function (x) { return x.path; })));
+  }
+}
+function render() {
+  drawMap();
+  var m = document.getElementById('main'); m.innerHTML = '';
+  document.getElementById('clock').textContent = '지금 ' + Eta.clock(Loc.Clock.now()) + ' 기준 ' + (LIVE ? '(실제 시각)' : '(시연 시계)');
+  var r = sel && LocData.ROUTES.find(function (x) { return x.id === sel; });
+  var head = function (s) { return el('p', { class: 'sub', style: 'margin:14px 2px 8px;font-weight:700', text: s }); };
+  var list = [head('무료 노선 · 병점')].concat(bjCard()).concat([head('유료 노선 · 송내 · 강남 · 사당')])
+    .concat(LocData.ROUTES.filter(function (x) { return !x.group; }).map(function (x) { return card(x).view; }))
+    .concat([el('p', { class: 'note', text: '노선을 누르면 자세히 볼 수 있습니다. 위치는 30초마다 갱신됩니다.' })]);
+  (sel === 'byeongjeom' ? bjDetail() : r ? detail(r) : list).forEach(function (n) { if (n) m.appendChild(n); });
+}
+Loc.on(render); setInterval(render, 1000); render();
+</script></body></html>
