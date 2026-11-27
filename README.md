@@ -5,6 +5,8 @@
 
 ## 실시간 모드 (11/27 추가, Cloudflare Worker)
 
+- 서비스 주소: https://suwon-realtime-bus.dkmdkm999.workers.dev (실시간 학생 화면 `/student#live`, 시연 화면 `/`, 시각 고정 `/student#demo=08:38`)
+
 시험 기기(공기계 역할 휴대폰)의 **실제 GPS**를 받아 학생 화면에 그린다. 학교 승인 전이므로 버스가 아닌 팀원 휴대폰으로만 시험한다.
 
 - 위치 받기 `POST /api/v1/osmand`: Traccar Client가 보내는 형식(새 앱의 JSON `device_id`+`location.coords`, 옛 앱·OsmAnd의 주소 뒤 값, 폼 본문)을 모두 받는다. 앱은 머리글을 못 넣으므로 **기기 ID 자체가 비밀번호**다. 등록된 기기 ID만 받고(그 밖은 404), 버스마다 최근 위치 20개만 보관한다.

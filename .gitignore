@@ -4,3 +4,4 @@ public/
 node_modules/
 assets/usw-*
 docs_img/
+.device-id.txt
