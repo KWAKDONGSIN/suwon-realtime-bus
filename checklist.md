@@ -10,7 +10,7 @@
 - [ ] 학생지원과에 기획서 보내기, 위치정보지원센터 상담
 - [ ] 단톡 설문을 지연·위치 문항으로 바꾸기(예약 문항 폼은 응답 받기 끄기)
 - [x] 11/27 서버 구현: Worker(/api/v1/osmand Traccar 형식, /api/v1/buses), 학생 화면 `#live`, 로고 뺀 public 빌드, 시험 8개 통과, 로컬에서 위치 3건 → 학생 화면 표시 확인
-- [ ] 배포(서비스 주소)와 카카오 앱에 배포 주소 추가 — 팀장 확인 후
+- [x] 11/27 배포 https://suwon-realtime-bus.dkmdkm999.workers.dev, 카카오 앱 JS SDK 도메인에 추가(카카오 지도 표시 확인)
+- [x] 11/27 공개 저장소 https://github.com/KWAKDONGSIN/suwon-realtime-bus
 - [ ] S10e에 Traccar Client 설치 → 배포 주소로 30분 걷기 시험(화면 끔·LTE, 배터리 기록) → 시연 영상 촬영
-- [ ] 공개 GitHub 저장소 만들기(로고·docs_img 제외, .gitignore 적용됨) — 팀장 확인 후
 - [ ] 대안 버스 프록시(경기도 버스 API)는 아직 고정값
